@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33213.308
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Joy_Template", "Joy_Template\Joy_Template.csproj", "{5898BA27-8254-4E4E-A7EC-65AFDE194A7B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5898BA27-8254-4E4E-A7EC-65AFDE194A7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5898BA27-8254-4E4E-A7EC-65AFDE194A7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5898BA27-8254-4E4E-A7EC-65AFDE194A7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5898BA27-8254-4E4E-A7EC-65AFDE194A7B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E3D34CE6-3F15-42FE-886A-F084B176DBB7}
+	EndGlobalSection
+EndGlobal
