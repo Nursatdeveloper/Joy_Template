@@ -1,36 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using MVCTemplate.Data;
 using System.ComponentModel.DataAnnotations;
-using System.Reflection.Emit;
-using MVCTemplate.Sources.Repository;
 
-namespace MVCTemplate.Data {
-    public class SystemDbContext: DbContext {
-        public SystemDbContext(DbContextOptions<SystemDbContext> options) : base(options) {
-
-        }
-        public DbSet<TbExceptions> TbExceptions { get; set; }
-        public DbSet<TbLogs> TbLogs { get; set; }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder) {
-            modelBuilder.Entity<TbExceptions>()
-                .ToTable("tbexceptions", schema: "system");
-
-            modelBuilder.Entity<TbLogs>()
-                .ToTable("tblogs", schema: "system");
-        }
-
-    }
-
-    public class TbExceptions{
+namespace Joy_Template.Data.Tables {
+    public class TbExceptions {
         [Key]
         public long Id { get; set; }
+        public bool IsProcessed { get; set; }
         public DateTime CreatedAt { get; set; }
         public string Exception { get; set; }
     }
 
-    public class TbLogs{
+    public class TbLogs {
         [Key]
         public long Id { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -49,10 +29,10 @@ namespace MVCTemplate.Data {
         Task LogMessageAsync(LogType logType, string Message);
     }
 
-    public class SystemMonitor: ISystemMonitor {
+    public class SystemMonitor : ISystemMonitor {
 
-        private readonly SystemDbContext _context;
-        public SystemMonitor(SystemDbContext context) {
+        private readonly ApplicationDbContext _context;
+        public SystemMonitor(ApplicationDbContext context) {
             _context = context;
         }
         public async Task LogMessageAsync(LogType logType, string message) {
@@ -67,11 +47,11 @@ namespace MVCTemplate.Data {
         public async Task SaveExceptionAsync(string exception) {
             await _context.Set<TbExceptions>().AddAsync(new TbExceptions {
                 CreatedAt = DateTime.UtcNow,
-                Exception = exception
+                Exception = exception,
+                IsProcessed = false
             });
             await _context.SaveChangesAsync();
         }
     }
-
 
 }

@@ -1,16 +1,24 @@
 ﻿using Joy_Template.Models;
+using Joy_Template.Sources.Repository;
 using Microsoft.AspNetCore.Mvc;
+using MVCTemplate.Data;
 using System.Diagnostics;
 
 namespace Joy_Template.Controllers {
-    public class HomeController: Controller {
+    public class HomeController : Controller {
         private readonly ILogger<HomeController> _logger;
+        private readonly IRepositoryProvider _repositoryProvider;
 
-        public HomeController(ILogger<HomeController> logger) {
+        public HomeController(ILogger<HomeController> logger, IRepositoryProvider repositoryProvider) {
             _logger = logger;
+            _repositoryProvider = repositoryProvider;
         }
 
-        public IActionResult Index() {
+        public async Task<IActionResult> Index() {
+            var tbTest = _repositoryProvider.GetTbTest();
+            await tbTest.InsertAsync(new TbTest {
+                Name = "Nursat"
+            });
             return View();
         }
 
