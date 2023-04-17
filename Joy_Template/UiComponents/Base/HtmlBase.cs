@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Html;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Joy_Template.UiComponents.Base {
     public abstract class HtmlBase {
@@ -9,9 +10,10 @@ namespace Joy_Template.UiComponents.Base {
             Attributes = new Dictionary<string, string>();
         }
         public HtmlBase WithAttr(string key, string value) {
-            Attributes[key] = value; return this;
+            Attributes[key] = value;
+            return this;
         }
-        public abstract HtmlString ToHtmlString();
+        public abstract HtmlString ToHtmlString(IHtmlHelper html);
     }
 
     public abstract class PairedHtmlTag : HtmlBase {

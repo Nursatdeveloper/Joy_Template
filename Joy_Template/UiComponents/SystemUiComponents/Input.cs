@@ -1,5 +1,6 @@
 ﻿using Joy_Template.UiComponents.Base;
 using Microsoft.AspNetCore.Html;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Text;
 
 namespace Joy_Template.UiComponents.SystemUiComponents {
@@ -11,7 +12,7 @@ namespace Joy_Template.UiComponents.SystemUiComponents {
             Value = value;
             Type = type ?? "text";
         }
-        public override HtmlString ToHtmlString() {
+        public override HtmlString ToHtmlString(IHtmlHelper htmlHelper) {
             var sb = new StringBuilder();
             sb.Append($"<input type='{Type}' class='{CssClass}' value='{Value}' ");
             Attributes.ToList().ForEach(attr => sb.Append($"{attr.Key}='{attr.Value}' "));

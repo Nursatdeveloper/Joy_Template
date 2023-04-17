@@ -1,17 +1,23 @@
 using Joy_Template;
+using Joy_Template.Data.Tables;
+using Joy_Template.UiComponents.Base;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using MVCTemplate.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<IHtmlHelperFactory, HtmlHelperFactory>();
 
 var connectionString = builder.Configuration.GetConnectionString("devConnection");
 
 builder.Services.ConfigureServices(services => services
+    .AddJoyAuthentication()
     .AddJoyDbContext(connectionString)
     .AddSystemMonitor()
-    .AddTable<TbTest>()
+    .AddTable<TbUser>()
 );
 
 var app = builder.Build();
@@ -28,6 +34,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(

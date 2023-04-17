@@ -46,7 +46,7 @@ namespace MVCTemplate.Sources.Repository {
 
         public async Task<TModel> InsertAsync(TModel entity) {
             try {
-                EnsureModelInitedProperty(entity);
+                EnsureModelInitedProperly(entity);
                 var createdObject = await _context.Set<TModel>().AddAsync(entity);
                 await _context.SaveChangesAsync();
                 return createdObject.Entity;
@@ -79,7 +79,7 @@ namespace MVCTemplate.Sources.Repository {
             }
         }
 
-        private void EnsureModelInitedProperty(TModel entity) {
+        private void EnsureModelInitedProperly(TModel entity) {
             entity.RowVersion = 1;
             entity.CreatedAt = DateTime.UtcNow;
             entity.UpdatedAt = null;

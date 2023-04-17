@@ -1,87 +1,73 @@
-﻿using Joy_Template.Models;
+﻿using Joy_Template.Data.Tables;
+using Joy_Template.Models;
+using Joy_Template.Sources.Base;
 using Joy_Template.Sources.Repository;
+using Joy_Template.Sources.Users.Ops;
 using Joy_Template.UiComponents.SystemUiComponents;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using MVCTemplate.Data;
 using MVCTemplate.Sources.Repository;
 using System.Diagnostics;
 
 namespace Joy_Template.Controllers {
-    public class Employee : TbBase {
-        public string Name { get; set; }
-        public int Age { get; set; }
-    }
     public class HomeController : Controller {
         private readonly ILogger<HomeController> _logger;
+        private readonly ApplicationDbContext _context;
+        private readonly IHtmlHelper _htmlHelper;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IRepositoryProvider _repositoryProvider;
-
-        public HomeController(ILogger<HomeController> logger, IRepositoryProvider repositoryProvider) {
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+        public HomeController(IDbContextFactory<ApplicationDbContext> contextFactory, ILogger<HomeController> logger, ApplicationDbContext context, IHtmlHelper htmlHelper, IHttpContextAccessor httpContextAccessor, IRepositoryProvider repositoryProvider) {
             _logger = logger;
-            _repositoryProvider = repositoryProvider;
+            _context = context;
+            _htmlHelper = htmlHelper;
+            _httpContextAccessor = httpContextAccessor;
+            _repositoryProvider = repositoryProvider;   
+            _contextFactory = contextFactory;
         }
 
         public async Task<IActionResult> Index() {
+            var createUserOpRender = new RegisterUserOp(_htmlHelper, _httpContextAccessor.HttpContext)
+                .SetAction(nameof(HomeController), nameof(Index))
+                .GetHtml();
+            ViewData["render"] = createUserOpRender;
+            return View();
+        }
+        [HttpPost]
+        public async Task<IActionResult> Index(RegisterUserOpModel model) {
+            new RegisterUserOp(_htmlHelper, _httpContextAccessor.HttpContext)
+                .SetModel(model, _contextFactory.CreateDbContext());
+            return View(model);
+        }
 
-            var html = new Form("Register", "Home", "post")
-                .Append(
-                    new Div("text-danger")
-                        .WithAttr("asp-validation-summary", "All")
-                )
-                .Append(
-                    new Div("form-group")
-                        .Append(new Label(text: "Name").WithAttr("asp-for", "Name"))
-                        .Append(new Input(cssClass: "form-control").WithAttr("asp-for", "Name"))
-                        .Append(new Span().WithAttr("asp-validation-for", "Name"))
-                ).ToHtmlString();
-
-            ViewData["form"] = html;
-            var employees = new List<Employee>() {
-                new Employee() {Name = "Adam", Age = 18, CreatedAt = DateTime.Now},
-                new Employee() {Name = "Sandler", Age = 28, CreatedAt = DateTime.Now},
-                new Employee() {Name = "Tom Ford", Age = 38, CreatedAt = DateTime.Now},
-            };
-
-            var table = new Table<Employee>(employees)
+        public async Task<IActionResult> Users() {
+            var users = _contextFactory.CreateDbContext().TbUsers.ToList();
+            var panel = new Div(CssClass.Card)
+                .Append(new Table<TbUser>(users)
+                .Filter(new[] {
+                    new FilterData(nameof(TbUser.Email), FieldType.Text),
+                    new FilterData(nameof(TbUser.Iin), FieldType.Text),
+                    new FilterData(nameof(TbUser.BirthDate), FieldType.DateTime)
+                })
                 .Header(new[] {
+                    "Id",
+                    "Iin",
+                    "Email",
                     "Name",
-                    "Age",
                     "BirthDate"
                 })
                 .Column(
-                    m => m.Name,
-                    m => m.Age,
-                    m => m.CreatedAt
-                ).ToHtmlString();
-
-            ViewData["table"] = table;
+                    c => c.Id,
+                    c => c.Iin,
+                    c => c.Email,
+                    c => c.Firstname,
+                    c => c.BirthDate
+                )).ToHtmlString(_htmlHelper);
+            ViewData["render"] = panel;
             return View();
-
         }
-
-        //[HttpPost]
-        //public async Task<IActionResult> Register(Company company) {
-        //    var tbTest = _repositoryProvider.GetTbTest();
-        //    await tbTest.InsertAsync(new TbTest {
-        //        Name = "Nursat"
-        //    });
-        //    if (ModelState.IsValid) {
-        //        new CreateOperation<TbCompany, ApplicationDbContext>()
-        //            .SetTable(new TbCompany())
-        //            .SetValues(
-        //                x => x.CEO = company.CEO,
-        //                x => x.Bin = company.Bin,
-        //                x => x.EmployeeNumber = company.EmployeeNumber,
-        //        x => x.Name = company.Name
-        //            ).Self(out var createOp);
-
-        //        var result = await createOp.ExecuteAsync(_context);
-        //        if (result.IsSuccess) {
-        //            return View();
-        //        }
-        //    }
-
-        //    return Error();
-
-        //}
 
         public IActionResult Privacy() {
             return View();

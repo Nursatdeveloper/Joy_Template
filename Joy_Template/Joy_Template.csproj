@@ -4,9 +4,11 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>514a844f-c244-435a-a7ba-a8e65f82cb00</UserSecretsId>
   </PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.14" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.14">
 			<PrivateAssets>all</PrivateAssets>

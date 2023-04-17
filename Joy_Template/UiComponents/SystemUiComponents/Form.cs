@@ -1,5 +1,7 @@
 ﻿using Joy_Template.UiComponents.Base;
 using Microsoft.AspNetCore.Html;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using System.Text;
 
 namespace Joy_Template.UiComponents.SystemUiComponents {
@@ -14,7 +16,7 @@ namespace Joy_Template.UiComponents.SystemUiComponents {
             Method = method;
             AspController = aspController;
         }
-        public override HtmlString ToHtmlString() {
+        public override HtmlString ToHtmlString(IHtmlHelper htmlHelper) {
             var sb = new StringBuilder();
             if (!string.IsNullOrEmpty(AspController)) {
                 sb.Append($"<form asp-action='{AspAction}' asp-controller='{AspController}'  method='{Method}' class='{CssClass ?? string.Empty}' ");
@@ -24,7 +26,7 @@ namespace Joy_Template.UiComponents.SystemUiComponents {
             Attributes.ToList().ForEach(attr => sb.Append($"{attr.Key}='{attr.Value}' "));
             sb.Append('>');
             if (Children.Count > 0) {
-                Children.ForEach(x => sb.Append(x.ToHtmlString()));
+                Children.ForEach(x => sb.Append(x.ToHtmlString(htmlHelper)));
             }
             if (!string.IsNullOrEmpty(Text)) {
                 sb.Append(Text);
