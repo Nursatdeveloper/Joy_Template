@@ -1,6 +1,5 @@
 ﻿using Joy_Template.Data.Tables;
 using Joy_Template.Models;
-using Joy_Template.Sources.Base;
 using Joy_Template.Sources.Repository;
 using Joy_Template.Sources.Users.Ops;
 using Joy_Template.UiComponents.SystemUiComponents;
@@ -8,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MVCTemplate.Data;
-using MVCTemplate.Sources.Repository;
 using System.Diagnostics;
 
 namespace Joy_Template.Controllers {
@@ -24,7 +22,7 @@ namespace Joy_Template.Controllers {
             _context = context;
             _htmlHelper = htmlHelper;
             _httpContextAccessor = httpContextAccessor;
-            _repositoryProvider = repositoryProvider;   
+            _repositoryProvider = repositoryProvider;
             _contextFactory = contextFactory;
         }
 
@@ -49,7 +47,8 @@ namespace Joy_Template.Controllers {
                 .Filter(new[] {
                     new FilterData(nameof(TbUser.Email), FieldType.Text),
                     new FilterData(nameof(TbUser.Iin), FieldType.Text),
-                    new FilterData(nameof(TbUser.BirthDate), FieldType.DateTime)
+                    new FilterData(nameof(TbUser.BirthDate), FieldType.DateTime),
+                    new FilterData(nameof(TbUser.BirthDate), FieldType.Select)
                 })
                 .Header(new[] {
                     "Id",
