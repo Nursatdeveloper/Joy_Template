@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Text.Encodings.Web;
 using System.Text;
+using System.Security.Policy;
+using Joy_Template.UiComponents.SystemUiComponents.Table;
 
 namespace Joy_Template.UiComponents.Base
 {
@@ -14,8 +16,8 @@ namespace Joy_Template.UiComponents.Base
 
         public HtmlString Html { get; set; }
         public HtmlBase HtmlBase { get; set; }
-        public string Controller { get; set; }
-        public string Action { get; set; }
+        public SubmitArgs OnSubmitArgs { get; set; }
+        public SubmitArgs OnRefreshArgs { get; set; }
         public HttpContext Context { get; set; }
         public FormComponent Render(Func<HtmlBase> func)
         {
@@ -23,21 +25,29 @@ namespace Joy_Template.UiComponents.Base
             return this;
         }
 
-
-        public FormComponent SetAction(string controller, string action)
+        
+        public FormComponent OnSubmit(SubmitArgs submitArgs)
         {
-            Controller = controller.Replace("Controller", "");
-            Action = action;
+            OnSubmitArgs = submitArgs;
+            return this;
+        }
+
+        public FormComponent OnRefresh(SubmitArgs refreshArgs) {
+            OnRefreshArgs = refreshArgs;
             return this;
         }
         public HtmlString GetHtml()
         {
             var antiforgery = getString(HtmlHelper.AntiForgeryToken());
             var sb = new StringBuilder();
-            sb.Append($"<form method='post' action='{Controller}/{Action}'>" +
+            sb.Append($"<form method='post' asp-action='{OnSubmitArgs.Action}'>" +
                 $"{HtmlBase.ToHtmlString(HtmlHelper)}");
             sb.Append(antiforgery);
-            sb.Append("<input type='submit' class='btn btn-primary' value='Save' />");
+            sb.Append($"<input type='hidden' id='refresh-state-hidden' name='Refresh' value='false' />");
+            sb.Append($"<input type='submit' class='{OnSubmitArgs.BtnCssClass} mt-2 mb-2' value='{OnSubmitArgs.BtnText}' />");
+            if(OnRefreshArgs != null) {
+                sb.Append($"<input type='submit' onclick='refreshForm()' class='{OnRefreshArgs.BtnCssClass} m-2' value='{OnRefreshArgs.BtnText}' />");
+            }
             sb.Append("</form>");
             return new HtmlString(sb.ToString());
         }
@@ -45,10 +55,14 @@ namespace Joy_Template.UiComponents.Base
         {
             var antiforgery = getString(HtmlHelper.AntiForgeryToken());
             var sb = new StringBuilder();
-            sb.Append($"<form method='post' action='{Controller}/{Action}'>" +
+            sb.Append($"<form method='post' asp-action='{OnSubmitArgs.Action}'>" +
                 $"{HtmlBase.ToHtmlString(HtmlHelper)}");
             sb.Append(antiforgery);
-            sb.Append("<input type='submit' class='btn btn-primary' value='Save' />");
+            sb.Append($"<input type='hidden' id='refresh-state-hidden' name='refresh' value='false' />");
+            sb.Append($"<input type='submit' class='{OnSubmitArgs.BtnCssClass} mt-2 mb-2' value='{OnSubmitArgs.BtnText}' />");
+            if(OnRefreshArgs != null) {
+                sb.Append($"<input type='submit' onclick='refreshForm()' class='{OnRefreshArgs.BtnCssClass} m-2' value='{OnRefreshArgs.BtnText}' />");
+            }
             sb.Append("</form>");
             html = new HtmlString(sb.ToString());
         }

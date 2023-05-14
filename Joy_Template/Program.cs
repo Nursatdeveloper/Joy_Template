@@ -1,44 +1,91 @@
+using Joy.Database;
 using Joy_Template;
 using Joy_Template.Data.Tables;
 using Joy_Template.UiComponents.Base;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using MVCTemplate.Data;
 
-var builder = WebApplication.CreateBuilder(args);
+internal class Program {
+    private static void Main(string[] args) {
+        var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddTransient<IHtmlHelperFactory, HtmlHelperFactory>();
+        // Add services to the container.
+        builder.Services.AddControllersWithViews();
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddTransient<IHtmlHelperFactory, HtmlHelperFactory>();
 
-var connectionString = builder.Configuration.GetConnectionString("devConnection");
+        var connectionString = builder.Configuration.GetConnectionString("devConnection");
 
-builder.Services.ConfigureServices(services => services
-    .AddJoyAuthentication()
-    .AddJoyDbContext(connectionString)
-    .AddSystemMonitor()
-    .AddTable<TbUser>()
-);
+        builder.Services.AddJoyDatabase(options => options.ConnectionString(connectionString));
 
-var app = builder.Build();
+        builder.Services.ConfigureServices(services => services
+            .AddJoyAuthentication()
+            .AddJoyDbContext(connectionString)
+            .AddSystemMonitor()
+            .AddTable<TbUser>()
+        );
 
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment()) {
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+        var app = builder.Build();
+
+        // Configure the HTTP request pipeline.
+        if(!app.Environment.IsDevelopment()) {
+            app.UseExceptionHandler("/Home/Error");
+            // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+            app.UseHsts();
+        }
+
+        app.UseHttpsRedirection();
+        app.UseStaticFiles();
+
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+
+        app.UseRouting();
+
+
+        app.MapControllerRoute(
+            name: "default",
+            pattern: "{controller=Home}/{action=Index}/{id?}");
+
+        app.Run();
+    }
 }
 
-app.UseHttpsRedirection();
-app.UseStaticFiles();
+public class Page {
+    public string Url { get; set; }
+    public Args RouteArgs { get; set; }
+    public Page(string? url) {
+        Url = url;
+    }
+}
 
-app.UseRouting();
+public class Args {
+    public int Id { get; set; }
+    public string Name { get; set; }
+}
 
-app.UseAuthentication();
-app.UseAuthorization();
+public class Section {
+    public List<Page> Pages { get; set; }
+    public Section(List<Page> pages) {
+        Pages = pages;
+    }
 
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    public void AddPage(Page page) {
+        Pages.Add(page);
+    }
+}
 
-app.Run();
+public class AppSection: Section {
+    public AppSection() : base(new List<Page>()) {
+        Pages.AddRange(new[] {
+            new Page("/ru/url"),
+            new Page("/ru/hello"),
+            new Page("/ru/{Id}/{Name}")
+        });
+    }
+
+
+}

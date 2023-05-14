@@ -37,6 +37,14 @@ namespace Joy_Template {
             return services;
         }
 
+
+        public static List<T> AddIf<T>(this List<T> collection, T item, bool condition) {
+            if(condition) {
+                collection.Add(item);
+            }
+            return collection;
+        }
+
     }
 
 

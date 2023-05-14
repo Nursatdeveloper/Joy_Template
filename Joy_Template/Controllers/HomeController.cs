@@ -2,14 +2,18 @@
 using Joy_Template.Models;
 using Joy_Template.Sources.Repository;
 using Joy_Template.Sources.Users.Ops;
+using Joy_Template.UiComponents.Base;
 using Joy_Template.UiComponents.SystemUiComponents;
+using Joy_Template.UiComponents.SystemUiComponents.Table;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MVCTemplate.Data;
 using System.Diagnostics;
+using static Program;
 
-namespace Joy_Template.Controllers {
+namespace Joy_Template.Controllers
+{
     public class HomeController : Controller {
         private readonly ILogger<HomeController> _logger;
         private readonly ApplicationDbContext _context;
@@ -28,7 +32,7 @@ namespace Joy_Template.Controllers {
 
         public async Task<IActionResult> Index() {
             var createUserOpRender = new RegisterUserOp(_htmlHelper, _httpContextAccessor.HttpContext)
-                .SetAction(nameof(HomeController), nameof(Index))
+                .OnSubmit(new SubmitArgs(nameof(HomeController), nameof(Index), "Submit"))
                 .GetHtml();
             ViewData["render"] = createUserOpRender;
             return View();
@@ -39,31 +43,36 @@ namespace Joy_Template.Controllers {
                 .SetModel(model, _contextFactory.CreateDbContext());
             return View(model);
         }
+        public async Task<IActionResult> Test(IFormCollection formCollection) {
+            new FormComponent(_htmlHelper, _httpContextAccessor.HttpContext)
+                .OnSubmit(new SubmitArgs(nameof(HomeController), nameof(Test), "Submit"))
+                .Render(() =>
+                    new Div("form-group")
+                        .Append(new Label(text: "FirstName").WithAttr("asp-for", "FirstName"))
+                        .Append(new Input(cssClass: "form-control").WithAttr("name", "FirstName"))
+                ).ToHtmlString(out var html);
+            ViewData["render"] = html;
+            return View(nameof(Index));
+        }
 
-        public async Task<IActionResult> Users() {
-            var users = _contextFactory.CreateDbContext().TbUsers.ToList();
-            var panel = new Div(CssClass.Card)
-                .Append(new Table<TbUser>(users)
-                .Filter(new[] {
-                    new FilterData(nameof(TbUser.Email), FieldType.Text),
-                    new FilterData(nameof(TbUser.Iin), FieldType.Text),
-                    new FilterData(nameof(TbUser.BirthDate), FieldType.DateTime),
-                    new FilterData(nameof(TbUser.BirthDate), FieldType.Select)
+        public async Task<IActionResult> Users(IFormCollection formCollection) {
+            var context = _contextFactory.CreateDbContext();
+
+            new SearchTable<TbUser>(context)
+                .OnSearch(new SubmitArgs(nameof(HomeController), nameof(Users), "Search"))
+                .Filter(new FilterData<TbUser>[] {
+                    new("Email", nameof(TbUser.Email), FieldType.Text, SearchType.Equals, f => f.Email),
+                    new("ИИН", nameof(TbUser.Iin), FieldType.Text, SearchType.Equals, f => f.Iin)
                 })
                 .Header(new[] {
-                    "Id",
-                    "Iin",
-                    "Email",
-                    "Name",
-                    "BirthDate"
+                    "Email", "ИИН"
                 })
-                .Column(
-                    c => c.Id,
-                    c => c.Iin,
+                .Presentation(
                     c => c.Email,
-                    c => c.Firstname,
-                    c => c.BirthDate
-                )).ToHtmlString(_htmlHelper);
+                    c => c.Iin
+                )
+                .Print(_htmlHelper, HttpContext, formCollection, out var panel);
+
             ViewData["render"] = panel;
             return View();
         }
