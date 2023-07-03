@@ -50,42 +50,9 @@ internal class Program {
             name: "default",
             pattern: "{controller=Home}/{action=Index}/{id?}");
 
+
         app.Run();
     }
 }
 
-public class Page {
-    public string Url { get; set; }
-    public Args RouteArgs { get; set; }
-    public Page(string? url) {
-        Url = url;
-    }
-}
 
-public class Args {
-    public int Id { get; set; }
-    public string Name { get; set; }
-}
-
-public class Section {
-    public List<Page> Pages { get; set; }
-    public Section(List<Page> pages) {
-        Pages = pages;
-    }
-
-    public void AddPage(Page page) {
-        Pages.Add(page);
-    }
-}
-
-public class AppSection: Section {
-    public AppSection() : base(new List<Page>()) {
-        Pages.AddRange(new[] {
-            new Page("/ru/url"),
-            new Page("/ru/hello"),
-            new Page("/ru/{Id}/{Name}")
-        });
-    }
-
-
-}

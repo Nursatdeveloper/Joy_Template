@@ -43,17 +43,6 @@ namespace Joy_Template.Controllers
                 .SetModel(model, _contextFactory.CreateDbContext());
             return View(model);
         }
-        public async Task<IActionResult> Test(IFormCollection formCollection) {
-            new FormComponent(_htmlHelper, _httpContextAccessor.HttpContext)
-                .OnSubmit(new SubmitArgs(nameof(HomeController), nameof(Test), "Submit"))
-                .Render(() =>
-                    new Div("form-group")
-                        .Append(new Label(text: "FirstName").WithAttr("asp-for", "FirstName"))
-                        .Append(new Input(cssClass: "form-control").WithAttr("name", "FirstName"))
-                ).ToHtmlString(out var html);
-            ViewData["render"] = html;
-            return View(nameof(Index));
-        }
 
         public async Task<IActionResult> Users(IFormCollection formCollection) {
             var context = _contextFactory.CreateDbContext();
