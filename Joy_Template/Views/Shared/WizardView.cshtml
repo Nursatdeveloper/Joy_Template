@@ -1,4 +1,4 @@
-﻿<section class="signup-step-container">
+﻿@*<section class="signup-step-container">
         <div class="container">
             <div class="row d-flex justify-content-center">
                 <div class="col-md-8">
@@ -300,3 +300,13 @@
             </div>
         </div>
     </section>
+*@
+
+@{
+    var renderHtml = ViewData["html"];
+}
+<div>
+    <div>@Html.Raw(renderHtml)</div>
+    <a href="/2">Next</a>
+    <a href="/1">Prev</a>
+</div>
