@@ -302,11 +302,29 @@
     </section>
 *@
 
-@{
-    var renderHtml = ViewData["html"];
-}
-<div>
-    <div>@Html.Raw(renderHtml)</div>
-    <a href="/2">Next</a>
-    <a href="/1">Prev</a>
+@using Joy_Template.Wizard
+
+@model Joy_Template.Wizard.WizardSystemModel
+
+
+<div class="container">
+    <div class="d-flex justify-content-evenly fs-24 mb-3 row">
+        @foreach(var stepInfo in Model.StepInfos) {
+            @if(stepInfo.StepNumber == Model.CurrentStep) {
+                <div class="col bg-primary border p-1">
+                    <h5 class="text-center">@stepInfo.StepName</h5>
+                </div>
+            } else {
+                <div class="col border p-1">
+                    <h5 class="text-center">@stepInfo.StepName</h5>
+                </div>
+            }
+        }
+    </div>
+    <div >
+        <div>
+            @Html.Raw(Model.StepInfos.First(x => x.StepNumber == Model.CurrentStep).RenderHtml)
+        </div>
+    </div>
 </div>
+

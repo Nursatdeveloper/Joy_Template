@@ -1,23 +1,15 @@
 ﻿using Joy_Template.UiComponents.Base;
-using Joy_Template.UiComponents.SystemUiComponents.Table;
 using Microsoft.AspNetCore.Html;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using System.Text;
-using System.Text.Encodings.Web;
 
 namespace Joy_Template.Wizard {
     public abstract class WizardBase<TModel> : Controller {
         public TModel Model { get; set; }
-        //private readonly IHtmlHelper _htmlHelper;
 
-        //public WizardBase(TModel model, IHtmlHelper htmlHelper) {
-        //    Model = model;
-        //    _htmlHelper = htmlHelper;
-        //}
         public WizardBase(TModel model) {
             Model = model;
         }
@@ -27,18 +19,19 @@ namespace Joy_Template.Wizard {
         [HttpGet]
         public IActionResult Index() {
             var steps = Steps(new WizardBuilder<TModel>(Model, HttpContext));
-            var htmlHelper = HttpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
-            var renderable = steps.StepInfo[0].RenderHtml;
-            var wizardForm = new WizardForm(nameof(Index), "WizardBase")
-                .SetStep(2)
-                .Append(renderable)
-                .ToHtmlString(htmlHelper);
 
-            ViewData["html"] = wizardForm;
-            return new ViewResult() {
-                ViewName = "WizardView",
-                ViewData = ViewData
-            };
+            var htmlHelper = HttpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
+            var stepInfos = steps.StepInfo.Select(x => {
+                var wizardForm = new WizardForm(nameof(Index), "WizardBase")
+                    .SetStepInfo(1, steps.Count)
+                    .Append(x.RenderHtml)
+                    .ToHtmlString(htmlHelper);
+                return new WizardStepSystemInfo(x.Number, x.Name, wizardForm, null);
+            }).ToArray();
+
+            var wizardSystemModel = new WizardSystemModel(stepInfos, stepInfos.Length, 1);
+
+            return View("WizardView", wizardSystemModel);
         }
 
         [HttpPost]
@@ -46,21 +39,23 @@ namespace Joy_Template.Wizard {
             var steps = Steps(new WizardBuilder<TModel>(Model, HttpContext));
 
             var htmlHelper = HttpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
-            var renderable = steps.StepInfo[step-1].RenderHtml;
-            var wizardForm = new WizardForm(nameof(Index), "WizardBase")
-                .SetStep(step+1)
-                .Append(renderable)
-                .ToHtmlString(htmlHelper);
+            var stepInfos = steps.StepInfo.Select(x => {
+                var wizardForm = new WizardForm(nameof(Index), "WizardBase")
+                    .SetStepInfo(step + 1, steps.Count)
+                    .Append(x.RenderHtml)
+                    .ToHtmlString(htmlHelper);
+                return new WizardStepSystemInfo(x.Number, x.Name, wizardForm, null);
+            }).ToArray();
 
-            ViewData["html"] = wizardForm;
-            return new ViewResult() {
-                ViewName = "WizardView",
-                ViewData = ViewData
-            };
+            var wizardSystemModel = new WizardSystemModel(stepInfos, stepInfos.Length, step);
+
+            return View("WizardView", wizardSystemModel);
         }
 
     }
 
+    public record WizardSystemModel(WizardStepSystemInfo[] StepInfos, int StepsNumber, int CurrentStep);
+    public record WizardStepSystemInfo(int StepNumber, string StepName, HtmlString RenderHtml, string[] ValidationErrors);
 
     #region Environments
     public class EnvironmentBase<TModel> {
@@ -96,12 +91,12 @@ namespace Joy_Template.Wizard {
         public ViewContext ViewContext { get; set; }
 
         public void Contextualize(ViewContext viewContext) {
-            if(HtmlHelper is IViewContextAware) {
+            if (HtmlHelper is IViewContextAware) {
                 ((IViewContextAware)HtmlHelper).Contextualize(viewContext);
             }
         }
     }
-    public class WizardActionBuilder<TModel>: WizardActionBuilderBase, IWizardActionBuilder<TModel> {
+    public class WizardActionBuilder<TModel> : WizardActionBuilderBase, IWizardActionBuilder<TModel> {
         private HtmlBase _html;
         private RenderEnvironment<TModel> _renderEnv;
         public WizardActionBuilder(TModel model, HttpContext httpContext) : base(httpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create()) {
@@ -111,26 +106,6 @@ namespace Joy_Template.Wizard {
         public IWizardActionHandler<TModel> OnRendering(Func<RenderEnvironment<TModel>, HtmlBase> re) {
             _html = re.Invoke(_renderEnv);
             return new WizardActionHandler<TModel>(_html);
-        }
-
-        private HtmlString getHtml() {
-            var antiforgery = getString(HtmlHelper.AntiForgeryToken());
-            var sb = new StringBuilder();
-            sb.Append($"<form method='post' asp-action=''>" +
-                $"{_html.ToHtmlString(HtmlHelper)}");
-            sb.Append(antiforgery);
-            sb.Append($"<input type='hidden' id='refresh-state-hidden' name='Refresh' value='false' />");
-            sb.Append($"<input type='submit' class='btn btn-primary btn-sm mt-2 mb-2' value='Submit' />");
-       
-            sb.Append("</form>");
-            return new HtmlString(sb.ToString());
-        }
-
-        private static string getString(IHtmlContent content) {
-            using(var writer = new StringWriter()) {
-                content.WriteTo(writer, HtmlEncoder.Default);
-                return writer.ToString();
-            }
         }
     }
 
@@ -154,39 +129,41 @@ namespace Joy_Template.Wizard {
 
     #region Wizard Form
     public interface IWizardForm {
-      
+
     }
 
-    public class WizardForm: PairedHtmlTag, IWizardForm {
+    public class WizardForm : PairedHtmlTag, IWizardForm {
         private string _aspAction;
         private string _aspController;
-        private int _stepNumber;
+        private int _currentStepNumber;
+        private int _totalStepNumber;
         public WizardForm(string action, string controller) {
             _aspAction = action;
             _aspController = controller;
         }
-        public WizardForm SetStep(int number) {
-            _stepNumber= number;
+        public WizardForm SetStepInfo(int currentStepNumber, int totalStepNumber) {
+            _currentStepNumber = currentStepNumber;
+            _totalStepNumber = totalStepNumber;
             return this;
         }
         public override HtmlString ToHtmlString(IHtmlHelper html) {
             var sb = new StringBuilder();
-            if(!string.IsNullOrEmpty(_aspController)) {
+            if (!string.IsNullOrEmpty(_aspController)) {
                 sb.Append($"<form asp-action='{_aspAction}' asp-controller='{_aspController}'  method='post' class='{CssClass ?? string.Empty}' ");
             } else {
                 sb.Append($"<form asp-action='{_aspAction}' method='post' class='{CssClass ?? string.Empty}' ");
             }
             Attributes.ToList().ForEach(attr => sb.Append($"{attr.Key}='{attr.Value}' "));
             sb.Append('>');
-            if(_stepNumber == 0) {
+            if (_currentStepNumber == 0 || _totalStepNumber == 0) {
                 throw new InvalidOperationException();
             } else {
-                sb.Append($"<input name='step' type='hidden' value='{_stepNumber}' />");
+                sb.Append($"<input name='step' type='hidden' value='{_currentStepNumber}' />");
             }
-            if(Children.Count > 0) {
+            if (Children.Count > 0) {
                 Children.ForEach(x => sb.Append(x.ToHtmlString(html)));
             }
-            if(!string.IsNullOrEmpty(Text)) {
+            if (!string.IsNullOrEmpty(Text)) {
                 sb.Append(Text);
             }
             sb.Append($"<input type='submit' value='Submit' />");
