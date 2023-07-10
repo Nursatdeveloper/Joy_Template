@@ -5,26 +5,34 @@ namespace Joy_Template.Wizard {
     [Route("application/wizard")]
     public class ApplicationWizard : WizardBase<ApplicationModel> {
 
-        public ApplicationWizard() : base(new ApplicationModel("Nursat", 1)) {
+        public ApplicationWizard() : base(ApplicationModel.Empty) {
         }
 
         public override StepsCollection<ApplicationModel> Steps(IWizardBuilder<ApplicationModel> builder) {
             return builder
                 .Step("Step 1", action => action
                     .OnRendering(re => {
+                        var panel = new Div("card card-body");
+                        re.Html.LabelFor(nameof(re.Model.FirstName), "Firstname", panel);
+                        re.Html.TextBoxFor(nameof(re.Model.FirstName), m => m.FirstName, panel);
 
-                        return new Div("card card-body border")
-                            .Append(new Div()
-                                .Append(new Label("form-label", "Name"))
-                                .Append(new Input("text", "form-control", value: "Hello from step 1"))
-                            )
-                            .Append(new Div()
-                                .Append(new Label("form-label", "Age"))
-                                .Append(new Input("text", "form-control"))
-                            );
+                        re.Html.LabelFor(nameof(re.Model.LastName), "Lastname", panel);
+                        re.Html.TextBoxFor(nameof(re.Model.LastName), m => m.LastName, panel);
+
+                        re.Html.LabelFor(nameof(re.Model.Iin), "Iin", panel);
+                        re.Html.TextBoxFor(nameof(re.Model.Iin), m => m.Iin, panel);
+                        return panel;
                     })
                     .OnValidating(ve => {
-                        return true;
+                        var firstName = ve.Form.GetStringVal(nameof(ve.Model.FirstName));
+                        var lastName = ve.Form.GetStringVal(nameof(ve.Model.LastName));
+                        var iin = ve.Form.GetStringVal(nameof(ve.Model.Iin));
+                        if (string.IsNullOrEmpty(iin)) {
+                            ve.AddError("Iin", "Some validationError");
+                            if (iin.Length != 12) {
+                                ve.AddError("Iin", "Lenght of iin must be 12");
+                            }
+                        }
                     })
                 )
                 .Step("Step 2", action => action
@@ -40,7 +48,8 @@ namespace Joy_Template.Wizard {
                             );
                     })
                     .OnValidating(ve => {
-                        return true;
+                        ve.AddError("Name", "Some validationError From step 2");
+
                     })
                 )
                 .Step("Step 3", action => action
@@ -56,12 +65,16 @@ namespace Joy_Template.Wizard {
                             );
                     })
                     .OnValidating(ve => {
-                        return true;
+                        ve.AddError("Name", "Some validationError From step 3");
+
                     })
                 ).Build();
         }
     }
 
-    public record ApplicationModel(string Name, int Age);
+    public record ApplicationModel(string FirstName, string LastName, string Iin, int? Age, decimal? Balance, DateTime? BirthDate) {
+        public static ApplicationModel Empty => new(null, null, null, null, null, null);
+    }
+
 
 }

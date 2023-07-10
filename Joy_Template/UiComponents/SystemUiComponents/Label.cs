@@ -5,13 +5,14 @@ using System.Text;
 
 namespace Joy_Template.UiComponents.SystemUiComponents {
     public class Label : PairedHtmlTag {
+        public string FieldName { get; set; }
         public Label(string cssClass = null, string text = null) : base(text) {
             CssClass = cssClass;
             Text = text;
         }
         public override HtmlString ToHtmlString(IHtmlHelper htmlHelper) {
             var sb = new StringBuilder();
-            sb.Append($"<label class='{CssClass ?? string.Empty}' ");
+            sb.Append($"<label asp-for='{FieldName}' class='{CssClass ?? string.Empty}' ");
             Attributes.ToList().ForEach(attr => sb.Append($"{attr.Key}='{attr.Value}' "));
             sb.Append('>');
             if (Children.Count > 0) {

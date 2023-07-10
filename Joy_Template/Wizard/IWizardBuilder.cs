@@ -3,7 +3,7 @@
         public IWizardStep<TModel> Step(string step, Func<IWizardActionBuilder<TModel>, IWizardActionHandler<TModel>> action);
     }
 
-    public class WizardBuilder<TModel>: IWizardBuilder<TModel> {
+    public class WizardBuilder<TModel> : IWizardBuilder<TModel> {
 
         public TModel Model { get; set; }
         public HttpContext Context { get; set; }
@@ -15,8 +15,10 @@
         }
         public IWizardStep<TModel> Step(string step, Func<IWizardActionBuilder<TModel>, IWizardActionHandler<TModel>> action) {
             var actionResult = action.Invoke(new WizardActionBuilder<TModel>(Model, Context));
+            var renderResult = actionResult.Html;
+            var validationResult = actionResult.Errors;
             return new WizardStep<TModel>(Model, new List<StepInfo<TModel>>() {
-                new StepInfo<TModel>(stepNumber, step, actionResult.Html, new StepValidation<TModel>(null))
+                new StepInfo<TModel>(stepNumber, step, renderResult, validationResult)
             }, stepNumber + 1, Context);
         }
     }
@@ -26,7 +28,7 @@
         public StepsCollection<TModel> Build();
     }
 
-    public class WizardStep<TModel>: IWizardStep<TModel> {
+    public class WizardStep<TModel> : IWizardStep<TModel> {
         public List<StepInfo<TModel>> StepInfos { get; set; }
         public TModel Model { get; set; }
         public HttpContext Context { get; set; }
@@ -44,7 +46,9 @@
 
         public IWizardStep<TModel> Step(string step, Func<IWizardActionBuilder<TModel>, IWizardActionHandler<TModel>> action) {
             var actionResult = action.Invoke(new WizardActionBuilder<TModel>(Model, Context));
-            StepInfos.Add(new StepInfo<TModel>(_stepNumber, step, actionResult.Html, new StepValidation<TModel>(null)));
+            var renderResult = actionResult.Html;
+            var validationResult = actionResult.Errors;
+            StepInfos.Add(new StepInfo<TModel>(_stepNumber, step, renderResult, validationResult));
             return new WizardStep<TModel>(Model, StepInfos, _stepNumber + 1, Context);
         }
     }
