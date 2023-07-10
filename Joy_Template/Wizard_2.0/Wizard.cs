@@ -3,9 +3,13 @@ using Joy_Template.UiComponents.Base;
 using Joy_Template.Wizard;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
+using System.Collections.Immutable;
+using System.Text;
 
 namespace Joy_Template.Wizard_2._0 {
+    
     public abstract class Wizard<TModel> : Controller {
         private TModel _model;
         public Wizard(TModel model) {
@@ -16,84 +20,67 @@ namespace Joy_Template.Wizard_2._0 {
 
         [HttpGet]
         public IActionResult Index() {
-            var htmlHelper = HttpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
-
-            var steps = Steps(new WizardBuilder2<TModel>());
-            var firstStep = steps.Steps.First();
+            var wizard = new WizardActionUtils<TModel>(HttpContext, Steps(new WizardBuilder2<TModel>()), _model);
+            var firstStep = wizard.StepCollection.Steps.First();
             var actionHandler = firstStep.ActionHandler;
 
-            var rEnv = new RenderEnvironment<TModel>(_model, HttpContext);
-            var renderResult = actionHandler.RenderAction.Invoke(rEnv);
-            var modelEncrypted = JsonConvert.SerializeObject(_model);
+            var rEnv = new RenderEnvironment<TModel>(wizard.Model, wizard.HttpContext);
+            var renderResult = actionHandler.RenderAction.Invoke(rEnv).ToHtmlString(wizard.HtmlHelper);
 
-            var wizardForm = new WizardForm(nameof(Index), "Wizard")
-                .SetStepInfo(1, steps.StepCount)
-                .SetModel(modelEncrypted)
-                .Append(renderResult)
-                .ToHtmlString(htmlHelper);
-
-            var wizardStepViewModel = new WizardStepViewModel(1, firstStep.Name, wizardForm, Array.Empty<string>());
-            var wizardHeader = steps.Steps.Select(x => new WizardHeaderViewModel(x.Number, x.Name)).ToArray();
-            var wizardViewModel = new WizardViewModel(wizardStepViewModel, 1, wizardHeader);
+            var nextWizardFormModel = new WizardFormModel<TModel>(wizard.Model, 1, 2, wizard.StepCount, 0);
+            var wizardFormModelJson = JsonConvert.SerializeObject(nextWizardFormModel);
+            var wizardStepViewModel = new WizardStepViewModel(1, firstStep.Name, renderResult, ImmutableArray<ValidationError>.Empty);
+            var wizardViewModel = new WizardViewModel(wizardStepViewModel, wizard.GetHeaderViewModel(), 1, wizardFormModelJson, null);
 
             return View("WizardView2", wizardViewModel);
         }
 
         [HttpPost]
-        public IActionResult Index(int step, IFormCollection form) {
-            var htmlHelper = HttpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
-            _model = JsonConvert.DeserializeObject<TModel>(form["wizardModel"]);
-            var steps = Steps(new WizardBuilder2<TModel>());
-            var currentStep = steps.Steps.FirstOrDefault(x => x.Number == step);
+        [ValidateAntiForgeryToken]
+        public IActionResult Index(string wizardModel) {
+            var wizard = new WizardActionUtils<TModel>(HttpContext, Steps(new WizardBuilder2<TModel>()), _model);
+
+            var currentStep = wizard.GetCurrentStepInfo();
             var actionHandler = currentStep.ActionHandler;
 
-            var vEnv = new ValidationEnvironment<TModel>(_model, form);
+            var vEnv = new ValidationEnvironment<TModel>(wizard.Model, wizard.FormCollection);
 
-            actionHandler.ValidationAction.Invoke(vEnv);
+            var isNextAction = wizard.FormModel.CurrentStep > wizard.FormModel.PrevStepNumber;
+            if(isNextAction) {
+                actionHandler.ValidationAction.Invoke(vEnv);
+            }
             if (vEnv.Errors.Length > 0) {
-                var rEnv = new RenderEnvironment<TModel>(_model, HttpContext);
-                var renderResult = actionHandler.RenderAction.Invoke(rEnv);
-                var modelEncrypted = JsonConvert.SerializeObject(_model);
+                var rEnv = new RenderEnvironment<TModel>(wizard.Model, wizard.HttpContext);
+                var renderResult = actionHandler.RenderAction.Invoke(rEnv).ToHtmlString(wizard.HtmlHelper);
+                var nextWizardFormModel = JsonConvert.SerializeObject(new WizardFormModel<TModel>(wizard.Model, wizard.CurrentStep, wizard.CurrentStep+1, wizard.StepCount, wizard.CurrentStep-1));
+                var backWizardFormModel = JsonConvert.SerializeObject(new WizardFormModel<TModel>(wizard.Model, wizard.CurrentStep, wizard.CurrentStep-1, wizard.StepCount, wizard.CurrentStep+1));
 
-                var wizardForm = new WizardForm(nameof(Index), "Wizard")
-                    .SetStepInfo(step, steps.StepCount)
-                    .SetFormErrors(vEnv.Errors)
-                    .SetModel(modelEncrypted)
-                    .Append(renderResult)
-                    .ToHtmlString(htmlHelper);
-
-                var wizardStepViewModel = new WizardStepViewModel(currentStep.Number, currentStep.Name, wizardForm, Array.Empty<string>());
-                var wizardHeader = steps.Steps.Select(x => new WizardHeaderViewModel(x.Number, x.Name)).ToArray();
-                var wizardViewModel = new WizardViewModel(wizardStepViewModel, step, wizardHeader);
+                var wizardStepViewModel = new WizardStepViewModel(currentStep.Number, currentStep.Name, renderResult, vEnv.Errors);
+                var wizardViewModel = new WizardViewModel(wizardStepViewModel, wizard.GetHeaderViewModel(), wizard.CurrentStep, nextWizardFormModel, backWizardFormModel);
 
                 return View("WizardView2", wizardViewModel);
             } else {
-                var pEnv = new ProcessingEnvironment<TModel>(_model, form);
-                actionHandler.ProcessingAction.Invoke(pEnv);
-                _model = pEnv.Model;
+                var pEnv = new ProcessingEnvironment<TModel>(wizard.Model, wizard.FormCollection);
 
-                var nextStep = steps.Steps.FirstOrDefault(x => x.Number == step + 1);
+                if(isNextAction) {
+                    actionHandler.ProcessingAction.Invoke(pEnv);
+                }
 
-                var rEnv = new RenderEnvironment<TModel>(_model, HttpContext);
-                var renderResult = nextStep.ActionHandler.RenderAction.Invoke(rEnv);
-                var modelEncrypted = JsonConvert.SerializeObject(_model);
+                var nextStep = wizard.GetNextStepInfo();
 
-                var wizardForm = new WizardForm(nameof(Index), "Wizard")
-                    .SetStepInfo(step + 1, steps.StepCount)
-                    .SetModel(modelEncrypted)
-                    .Append(renderResult)
-                    .ToHtmlString(htmlHelper);
+                var rEnv = new RenderEnvironment<TModel>(wizard.Model, wizard.HttpContext);
+                var renderResult = nextStep.ActionHandler.RenderAction.Invoke(rEnv).ToHtmlString(wizard.HtmlHelper);
 
-                var wizardStepViewModel = new WizardStepViewModel(currentStep.Number, currentStep.Name, wizardForm, Array.Empty<string>());
-                var wizardHeader = steps.Steps.Select(x => new WizardHeaderViewModel(x.Number, x.Name)).ToArray();
-                var wizardViewModel = new WizardViewModel(wizardStepViewModel, step + 1, wizardHeader);
+                var nextWizardFormModel = JsonConvert.SerializeObject(new WizardFormModel<TModel>(pEnv.Model, nextStep.Number, nextStep.Number + 1, wizard.StepCount, nextStep.Number-1));
+                var backWizardFormModel = JsonConvert.SerializeObject(new WizardFormModel<TModel>(pEnv.Model, nextStep.Number, nextStep.Number - 1, wizard.StepCount, nextStep.Number+1));
+
+                var wizardStepViewModel = new WizardStepViewModel(nextStep.Number, nextStep.Name, renderResult, ImmutableArray<ValidationError>.Empty);
+                var wizardViewModel = new WizardViewModel(wizardStepViewModel, wizard.GetHeaderViewModel(), nextStep.Number, nextWizardFormModel, backWizardFormModel);
 
                 return View("WizardView2", wizardViewModel);
             }
         }
     }
-    public record WizardViewModel(WizardStepViewModel WizardStep, int CurrentStep, WizardHeaderViewModel[] WizardHeader);
-    public record WizardStepViewModel(int Number, string Name, HtmlString RenderHtml, string[] Errors);
-    public record WizardHeaderViewModel(int Number, string Name);
+
 
 }

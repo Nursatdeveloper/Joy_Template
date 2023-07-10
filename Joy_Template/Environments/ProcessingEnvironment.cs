@@ -1,9 +1,9 @@
 ﻿namespace Joy_Template.Environments {
     public class ProcessingEnvironment<TModel> : EnvironmentBase<TModel> {
-        public FormHandler Form { get; set; }
+        public FormHandler<TModel> Form { get; set; }
 
         public ProcessingEnvironment(TModel model, IFormCollection form) : base(model) {
-            Form = new FormHandler(form);
+            Form = new FormHandler<TModel>(form, model);
         }
     }
 }

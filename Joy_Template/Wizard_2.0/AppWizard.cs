@@ -20,7 +20,6 @@ namespace Joy_Template.Wizard_2._0 {
                     return panel;
                 })
                 .OnValidating(ve => {
-                    var fio = ve.Form.GetStringVal(nameof(ve.Model.Fio));
                     var iin = ve.Form.GetStringVal(nameof(ve.Model.Iin));
                     if (string.IsNullOrEmpty(iin)) {
                         ve.AddError("Iin", "Iin cannot be empty");
@@ -55,7 +54,7 @@ namespace Joy_Template.Wizard_2._0 {
                     };
                 })
             )
-            .Step("Step 2", action => action
+            .Step("Step 3", action => action
                 .OnRendering(re => {
                     var panel = new Div("card card-body");
                     re.Html.LabelFor(nameof(re.Model.Birthdate), "Birthdate", panel);
@@ -68,8 +67,26 @@ namespace Joy_Template.Wizard_2._0 {
                 })
                 .OnProcessing(pe => {
                     pe.Model = pe.Model with {
-                        Age = pe.Form.GetIntVal(nameof(pe.Model.Age))
+                        Birthdate = pe.Form.GetDateTimeVal(nameof(pe.Model.Birthdate))
                     };
+                })
+            )
+            .Step("Step 4", action => action
+                .OnRendering(re => {
+                    var panel = new Div("card card-body");
+                    re.Html.LabelFor(nameof(re.Model.Fio), "Fio", panel);
+                    re.Html.TextBoxFor(nameof(re.Model.Fio), m => m.Fio, panel);
+                    re.Html.LabelFor(nameof(re.Model.Iin), "Iin", panel);
+                    re.Html.TextBoxFor(nameof(re.Model.Iin), m => m.Iin, panel);
+                    re.Html.LabelFor(nameof(re.Model.Age), "Age", panel);
+                    re.Html.TextBoxFor(nameof(re.Model.Age), m => m.Age, panel);
+                    re.Html.LabelFor(nameof(re.Model.Birthdate), "Birthdate", panel);
+                    re.Html.TextBoxFor(nameof(re.Model.Birthdate), m => m.Birthdate, panel);
+                    return panel;
+                })
+                .OnValidating(ve => {
+                })
+                .OnProcessing(pe => {
                 })
             )
             .Build();

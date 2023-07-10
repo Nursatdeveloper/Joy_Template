@@ -18,8 +18,28 @@
         }
     </div>
     <div>
-        <div>
+        <form asp-action="Index">
+            @if(Model.WizardStep.Errors.Length > 0) {
+                <ul class="text-danger">
+                    @foreach(var error in Model.WizardStep.Errors) {
+                        <li>@error.Name: @error.ErrorMessage</li>
+                    }
+                </ul>
+            }
             @Html.Raw(Model.WizardStep.RenderHtml)
-        </div>
+            <input type="hidden" name="wizardModel" value="@Model.NextWizardFormModel" />
+            @if(Model.CurrentStep == Model.WizardHeader.Length) {
+                <input type="submit" value="Submit" class="btn btn-success btn-sm" />
+            } else {
+                <input type="submit" value="Next" class="btn btn-primary btn-sm" />
+            }
+        </form>
+        @if(Model.CurrentStep != 1) {
+            <form asp-action="Index">
+                <input type="hidden" name="wizardModel" value="@Model.BackWizardFormModel"/>
+                <input type="submit" value="Back" class="btn btn-secondary btn-sm" />
+            </form>
+        }
+        
     </div>
 </div>

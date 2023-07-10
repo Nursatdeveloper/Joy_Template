@@ -246,8 +246,8 @@ namespace Joy_Template.Wizard {
                 throw new InvalidOperationException();
             } else {
                 sb.Append($"<input name='step' type='hidden' value='{_currentStepNumber}' />");
+                sb.Append($"<input name='model' type='hidden' value='{_modelJson}' />");
             }
-            sb.Append($"<input name='wizardModel' type='hidden' value='{_modelJson}' />");
 
             if (Children.Count > 0) {
                 Children.ForEach(x => sb.Append(x.ToHtmlString(html)));
@@ -262,6 +262,7 @@ namespace Joy_Template.Wizard {
                 sb.Append("</form>");
                 sb.Append($"<form asp-action='{_aspAction}' method='post'>");
                 sb.Append($"<input type='hidden' name='step' value='{_previousStepNumber}' />");
+                sb.Append($"<input name='model' type='hidden' value='{_modelJson}' />");
                 sb.Append("<input type='submit' value='Back'  />");
                 sb.Append("</form>");
             }
