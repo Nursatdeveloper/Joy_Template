@@ -5,7 +5,7 @@ VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Joy_Template", "Joy_Template\Joy_Template.csproj", "{5898BA27-8254-4E4E-A7EC-65AFDE194A7B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Joy.Database", "Joy.Database\Joy.Database.csproj", "{A8784E89-B547-4252-99CE-050E55DD141B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Joy.Database", "Joy.Database\Joy.Database.csproj", "{A8784E89-B547-4252-99CE-050E55DD141B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

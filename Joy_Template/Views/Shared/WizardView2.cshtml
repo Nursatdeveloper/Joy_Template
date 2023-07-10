@@ -1,0 +1,25 @@
+﻿@using Joy_Template.Wizard_2._0
+
+@model Joy_Template.Wizard_2._0.WizardViewModel
+
+
+<div class="container">
+    <div class="d-flex justify-content-evenly fs-24 mb-3 row">
+        @foreach(var headerInfo in Model.WizardHeader) {
+            @if (headerInfo.Number == Model.CurrentStep) {
+                <div class="col bg-primary border p-1">
+                    <h5 class="text-center">@headerInfo.Name</h5>
+                </div>
+            } else {
+                <div class="col border p-1">
+                    <h5 class="text-center">@headerInfo.Name</h5>
+                </div>
+            }
+        }
+    </div>
+    <div>
+        <div>
+            @Html.Raw(Model.WizardStep.RenderHtml)
+        </div>
+    </div>
+</div>

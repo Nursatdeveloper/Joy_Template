@@ -5,4 +5,10 @@
             Model = model;
         }
     }
+
+    public enum EnvironmentAction {
+        Render,
+        Validate,
+        Process
+    }
 }

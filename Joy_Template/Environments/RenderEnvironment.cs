@@ -6,7 +6,7 @@ namespace Joy_Template.Environments {
         public HtmlRenderer<TModel> Html { get; set; }
         public IFormCollection FormCollection { get; set; }
         public RenderEnvironment(TModel model, HttpContext httpContext) : base(model) {
-            FormCollection = httpContext.Request.Form;
+            //FormCollection = httpContext.Request.Form;
             Html = new HtmlRenderer<TModel>(model);
         }
     }
@@ -28,15 +28,15 @@ namespace Joy_Template.Environments {
             panel.Append(new Input("text", "form-control", valueString, fieldName));
             _fieldNames.Add(fieldName);
         }
-        public void TextBoxFor(string fieldName, Func<TModel, int> getValue, PairedHtmlTag panel) {
+        public void TextBoxFor(string fieldName, Func<TModel, int?> getValue, PairedHtmlTag panel) {
             var valueInt = getValue(_model);
-            panel.Append(new Input("number", "form-control", valueInt.ToString(), fieldName));
+            panel.Append(new Input("number", "form-control", valueInt?.ToString(), fieldName));
             _fieldNames.Add(fieldName);
         }
 
-        public void TextBoxFor(string fieldName, Func<TModel, DateTime> getValue, PairedHtmlTag panel) {
+        public void TextBoxFor(string fieldName, Func<TModel, DateTime?> getValue, PairedHtmlTag panel) {
             var valueDateTime = getValue(_model);
-            panel.Append(new Input("date", "form-control", valueDateTime.ToString(), fieldName));
+            panel.Append(new Input("date", "form-control", valueDateTime?.ToString(), fieldName));
             _fieldNames.Add(fieldName);
         }
     }

@@ -20,18 +20,19 @@ namespace Joy_Template.Wizard {
 
         [HttpGet]
         public IActionResult Index() {
+            var htmlHelper = HttpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
+
             var steps = Steps(new WizardBuilder<TModel>(Model, HttpContext));
 
-            var htmlHelper = HttpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
             var stepInfos = steps.StepInfo.Select(x => {
+                var actionResult = x.GetActionFunc.Invoke(new WizardActionBuilder<TModel>(Model, HttpContext, EnvironmentAction.Render));
                 var wizardForm = new WizardForm(nameof(Index), "WizardBase")
                     .SetStepInfo(1, steps.Count)
-                    .SetFormErrors(x.ValidationErrors)
-                    .Append(x.RenderHtml)
+                    .SetFormErrors(actionResult.Errors)
+                    .Append(actionResult.Html)
                     .ToHtmlString(htmlHelper);
-                return new WizardStepSystemInfo(x.Number, x.Name, wizardForm, x.ValidationErrors);
+                return new WizardStepSystemInfo(x.Number, x.Name, wizardForm, actionResult.Errors);
             }).ToArray();
-
             var wizardSystemModel = new WizardSystemModel(stepInfos, stepInfos.Length, 1);
 
             return View("WizardView", wizardSystemModel);
@@ -39,22 +40,47 @@ namespace Joy_Template.Wizard {
 
         [HttpPost]
         public IActionResult Index(int step, IFormCollection form) {
+            var htmlHelper = HttpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
+
             var steps = Steps(new WizardBuilder<TModel>(Model, HttpContext));
 
-            var htmlHelper = HttpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
-            var stepInfos = steps.StepInfo.Select(x => {
-                var wizardForm = new WizardForm(nameof(Index), "WizardBase")
-                    .SetStepInfo(step, steps.Count)
-                    .SetFormErrors(x.ValidationErrors)
-                    .Append(x.RenderHtml)
-                    .ToHtmlString(htmlHelper);
-                return new WizardStepSystemInfo(x.Number, x.Name, wizardForm, x.ValidationErrors);
-            }).ToArray();
+            var previousStep = steps.StepInfo.FirstOrDefault(x => x.Number == step - 1);
+            if (previousStep == null) {
+                throw new Exception();
+            }
+            var validationResult = previousStep.GetActionFunc(new WizardActionBuilder<TModel>(Model, HttpContext, EnvironmentAction.Validate));
+            if (validationResult.Errors.Length > 0) {
+                var stepInfos = steps.StepInfo.Select(x => {
+                    var wizardForm = new WizardForm(nameof(Index), "WizardBase")
+                        .SetStepInfo(step - 1, steps.Count)
+                        .SetFormErrors(validationResult.Errors)
+                        .Append(validationResult.Html)
+                        .ToHtmlString(htmlHelper);
+                    return new WizardStepSystemInfo(x.Number, x.Name, wizardForm, validationResult.Errors);
+                }).ToArray();
 
-            var wizardSystemModel = new WizardSystemModel(stepInfos, stepInfos.Length, step);
+                var wizardSystemModel = new WizardSystemModel(stepInfos, stepInfos.Length, step - 1);
 
-            return View("WizardView", wizardSystemModel);
+                return View("WizardView", wizardSystemModel);
+            } else {
+                var processingResult = previousStep.GetActionFunc(new WizardActionBuilder<TModel>(Model, HttpContext, EnvironmentAction.Process));
+
+                var stepInfos = steps.StepInfo.Select(x => {
+                    var wizardForm = new WizardForm(nameof(Index), "WizardBase")
+                        .SetStepInfo(step, steps.Count)
+                        .Append(processingResult.Html)
+                        .ToHtmlString(htmlHelper);
+                    return new WizardStepSystemInfo(x.Number, x.Name, wizardForm, ImmutableArray<ValidationError>.Empty);
+                }).ToArray();
+
+                var wizardSystemModel = new WizardSystemModel(stepInfos, stepInfos.Length, step);
+
+                return View("WizardView", wizardSystemModel);
+            }
+
+
         }
+
 
     }
 
@@ -86,38 +112,48 @@ namespace Joy_Template.Wizard {
     public class WizardActionBuilder<TModel> : WizardActionBuilderBase, IWizardActionBuilder<TModel> {
         private HtmlBase _html;
         private RenderEnvironment<TModel> _renderEnv;
+        private EnvironmentAction _envAction;
         private TModel _model;
-        public WizardActionBuilder(TModel model, HttpContext httpContext) : base(httpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create()) {
+        public WizardActionBuilder(TModel model, HttpContext httpContext, EnvironmentAction envAction) : base(httpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create()) {
             _renderEnv = new RenderEnvironment<TModel>(model, httpContext);
             _model = model;
+            _envAction = envAction;
         }
 
         public IWizardActionHandler<TModel> OnRendering(Func<RenderEnvironment<TModel>, HtmlBase> re) {
-            _html = re.Invoke(_renderEnv);
-            return new WizardActionHandler<TModel>(_model, _html, _renderEnv.FormCollection);
+            if (_envAction == EnvironmentAction.Render) {
+                _html = re.Invoke(_renderEnv);
+            }
+            return new WizardActionHandler<TModel>(_model, _html, _renderEnv.FormCollection, _envAction);
         }
     }
 
     public interface IWizardActionHandler<TModel> {
         public HtmlBase Html { get; set; }
         public ImmutableArray<ValidationError> Errors { get; }
+        public TModel Model { get; }
         public IWizardActionHandler<TModel> OnValidating(Action<ValidationEnvironment<TModel>> ve);
         public IWizardActionHandler<TModel> OnProcessing(Action<ProcessingEnvironment<TModel>> pe);
     }
 
     public class WizardActionHandler<TModel> : IWizardActionHandler<TModel> {
-
+        private EnvironmentAction _envAction;
         private HtmlBase _html;
         private TModel _model;
         private ValidationEnvironment<TModel> _validationEnv;
+        private ProcessingEnvironment<TModel> _processingEnv;
 
         public HtmlBase Html { get => _html; set { _html = value; } }
         public ImmutableArray<ValidationError> Errors => _validationEnv.Errors;
 
-        public WizardActionHandler(TModel model, HtmlBase html, IFormCollection form) {
+        public TModel Model { get => _model; }
+
+        public WizardActionHandler(TModel model, HtmlBase html, IFormCollection form, EnvironmentAction envAction) {
             Html = html;
             _model = model;
             _validationEnv = new ValidationEnvironment<TModel>(model, form);
+            _processingEnv = new ProcessingEnvironment<TModel>(model, form);
+            _envAction = envAction;
         }
 
         private WizardActionHandler(HtmlBase html, TModel model, ValidationEnvironment<TModel> validationEnv) {
@@ -126,13 +162,25 @@ namespace Joy_Template.Wizard {
             _validationEnv = validationEnv;
         }
 
+        private WizardActionHandler(HtmlBase html, TModel model, ValidationEnvironment<TModel> validationEnv, ProcessingEnvironment<TModel> processingEnv) {
+            Html = html;
+            _model = model;
+            _validationEnv = validationEnv;
+            _processingEnv = processingEnv;
+        }
+
         public IWizardActionHandler<TModel> OnValidating(Action<ValidationEnvironment<TModel>> ve) {
-            ve.Invoke(_validationEnv);
+            if (_envAction == EnvironmentAction.Validate) {
+                ve.Invoke(_validationEnv);
+            }
             return new WizardActionHandler<TModel>(_html, _model, _validationEnv);
         }
 
         public IWizardActionHandler<TModel> OnProcessing(Action<ProcessingEnvironment<TModel>> pe) {
-            throw new NotImplementedException();
+            if (_envAction == EnvironmentAction.Process) {
+                pe.Invoke(_processingEnv);
+            }
+            return new WizardActionHandler<TModel>(_html, _processingEnv.Model, _validationEnv, _processingEnv);
         }
     }
     #endregion
@@ -153,6 +201,8 @@ namespace Joy_Template.Wizard {
 
         private ImmutableArray<ValidationError> _errors;
 
+        private string _modelJson;
+
         public WizardForm(string action, string controller) {
             _aspAction = action;
             _aspController = controller;
@@ -163,6 +213,11 @@ namespace Joy_Template.Wizard {
             _nextStepNumber = currentStepNumber + 1;
             _previousStepNumber = currentStepNumber - 1;
             _totalStepNumber = totalStepNumber;
+            return this;
+        }
+
+        public WizardForm SetModel(string modelJson) {
+            _modelJson = modelJson;
             return this;
         }
 
@@ -181,7 +236,7 @@ namespace Joy_Template.Wizard {
             Attributes.ToList().ForEach(attr => sb.Append($"{attr.Key}='{attr.Value}' "));
             sb.Append('>');
 
-            if (_errors.Length > 0) {
+            if (_errors != null) {
                 sb.Append("<ul class='text-danger'>");
                 foreach (var error in _errors) { sb.Append($"<li>{error.Name}: {error.ErrorMessage}</li>"); }
                 sb.Append("</ul>");
@@ -190,8 +245,10 @@ namespace Joy_Template.Wizard {
             if (_nextStepNumber == 0 || _totalStepNumber == 0) {
                 throw new InvalidOperationException();
             } else {
-                sb.Append($"<input name='step' type='hidden' value='{_nextStepNumber}' />");
+                sb.Append($"<input name='step' type='hidden' value='{_currentStepNumber}' />");
             }
+            sb.Append($"<input name='wizardModel' type='hidden' value='{_modelJson}' />");
+
             if (Children.Count > 0) {
                 Children.ForEach(x => sb.Append(x.ToHtmlString(html)));
             }
@@ -213,8 +270,5 @@ namespace Joy_Template.Wizard {
     }
     #endregion
 
-    public record StepsCollection<TModel>(StepInfo<TModel>[] StepInfo, int Count);
-
-    public record StepInfo<TModel>(int Number, string Name, HtmlBase RenderHtml, ImmutableArray<ValidationError> ValidationErrors);
 
 }

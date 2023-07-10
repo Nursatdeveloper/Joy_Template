@@ -34,6 +34,13 @@ namespace Joy_Template.Wizard {
                             }
                         }
                     })
+                    .OnProcessing(pe => {
+                        pe.Model = pe.Model with {
+                            FirstName = pe.Form.GetStringVal(nameof(pe.Model.FirstName)),
+                            LastName = pe.Form.GetStringVal(nameof(pe.Model.LastName)),
+                            Iin = pe.Form.GetStringVal(nameof(pe.Model.Iin))
+                        };
+                    })
                 )
                 .Step("Step 2", action => action
                     .OnRendering(re => {
