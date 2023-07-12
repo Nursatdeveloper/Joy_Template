@@ -20,7 +20,7 @@ namespace Joy_Template.Wizard {
 
         [HttpGet]
         public IActionResult Index() {
-            var htmlHelper = HttpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
+            var htmlHelper = HttpContext.RequestServices.GetRequiredService<IHtmlHelperFactory<TModel>>().Create();
 
             var steps = Steps(new WizardBuilder<TModel>(Model, HttpContext));
 
@@ -40,7 +40,7 @@ namespace Joy_Template.Wizard {
 
         [HttpPost]
         public IActionResult Index(int step, IFormCollection form) {
-            var htmlHelper = HttpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
+            var htmlHelper = HttpContext.RequestServices.GetRequiredService<IHtmlHelperFactory<TModel>>().Create();
 
             var steps = Steps(new WizardBuilder<TModel>(Model, HttpContext));
 
@@ -114,7 +114,7 @@ namespace Joy_Template.Wizard {
         private RenderEnvironment<TModel> _renderEnv;
         private EnvironmentAction _envAction;
         private TModel _model;
-        public WizardActionBuilder(TModel model, HttpContext httpContext, EnvironmentAction envAction) : base(httpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create()) {
+        public WizardActionBuilder(TModel model, HttpContext httpContext, EnvironmentAction envAction) : base(httpContext.RequestServices.GetRequiredService<IHtmlHelperFactory<TModel>>().Create()) {
             _renderEnv = new RenderEnvironment<TModel>(model, httpContext);
             _model = model;
             _envAction = envAction;

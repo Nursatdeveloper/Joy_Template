@@ -1,10 +1,14 @@
 using Joy.Database;
 using Joy_Template;
+using Joy_Template.Controllers;
 using Joy_Template.Data.Tables;
 using Joy_Template.UiComponents.Base;
+using Joy_Template.UiComponents.Version2;
+using Joy_Template.Wizard_2._0;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using MVCTemplate.Data;
 
 internal class Program {
@@ -14,7 +18,10 @@ internal class Program {
         // Add services to the container.
         builder.Services.AddControllersWithViews();
         builder.Services.AddHttpContextAccessor();
+        builder.Services.AddTransient<IJoyUi, JoyUi>();
         builder.Services.AddTransient<IHtmlHelperFactory, HtmlHelperFactory>();
+        builder.Services.AddTransient<IHtmlHelperFactory<AppModel>, HtmlHelperFactory<AppModel>>();
+        builder.Services.AddTransient<IHtmlHelperFactory<MyModel>, HtmlHelperFactory<MyModel>>();
 
         var connectionString = builder.Configuration.GetConnectionString("devConnection");
 

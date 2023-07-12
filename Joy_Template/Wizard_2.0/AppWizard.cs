@@ -1,17 +1,26 @@
 ﻿
+using Joy_Template.UiComponents.Base;
 using Joy_Template.UiComponents.SystemUiComponents;
+using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.ComponentModel;
 
 namespace Joy_Template.Wizard_2._0 {
+
     [Route("app/wizard")]
     public class AppWizard : Wizard<AppModel> {
-        public AppWizard() : base(AppModel.Empty) {
+        public AppWizard(IHtmlHelperFactory<AppModel> htmlHelperFactory) : base(AppModel.Empty, htmlHelperFactory) {
         }
 
         public override WizardStepCollection<AppModel> Steps(IWizardBuilder2<AppModel> builder)
             => builder
             .Step("Step 1", action => action
                 .OnRendering(re => {
+                    var htmlContent = HtmlHelper.TextBoxFor(m => m.Iin);
+                    var div = new TagBuilder("div");
+                    div.AddCssClass("card card-body");
+                    div.InnerHtml.Append(htmlContent.ToString());
                     var panel = new Div("card card-body");
                     re.Html.LabelFor(nameof(re.Model.Fio), "Fio", panel);
                     re.Html.TextBoxFor(nameof(re.Model.Fio), m => m.Fio, panel);

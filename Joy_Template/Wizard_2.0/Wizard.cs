@@ -12,8 +12,10 @@ namespace Joy_Template.Wizard_2._0 {
     
     public abstract class Wizard<TModel> : Controller {
         private TModel _model;
-        public Wizard(TModel model) {
+        public IHtmlHelper<TModel> HtmlHelper { get; set; }
+        public Wizard(TModel model, IHtmlHelperFactory<TModel> htmlHelperFactory) {
             _model = model;
+            HtmlHelper = htmlHelperFactory.Create();
         }
 
         public abstract WizardStepCollection<TModel> Steps(IWizardBuilder2<TModel> builder);

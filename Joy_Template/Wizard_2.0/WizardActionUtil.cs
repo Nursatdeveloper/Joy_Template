@@ -19,7 +19,7 @@ namespace Joy_Template.Wizard_2._0 {
             FormCollection = httpContext.Request.HasFormContentType ? httpContext.Request.Form : null;
             HttpContext = httpContext;
             StepCollection = stepCollection;
-            HtmlHelper = httpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
+            HtmlHelper = httpContext.RequestServices.GetRequiredService<IHtmlHelperFactory<TModel>>().Create();
             Model = httpContext.Request.HasFormContentType ? getFormModel(httpContext).Model : model;
             StepCount = stepCollection.StepCount;
             CurrentStep = getCurrentStep(httpContext);

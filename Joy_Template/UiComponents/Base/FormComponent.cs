@@ -11,7 +11,7 @@ namespace Joy_Template.UiComponents.Base
     {
         public FormComponent(IHtmlHelper htmlHelper, HttpContext httpContext) : base(htmlHelper)
         {
-            HtmlHelper = httpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
+            //HtmlHelper = httpContext.RequestServices.GetRequiredService<IHtmlHelperFactory>().Create();
         }
 
         public HtmlString Html { get; set; }
